@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Notes - Smart Student Hub</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">Smart Student Hub</div>
+      <nav>
+        <a href="home.html">Home</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="tasks.html">Tasks</a>
+        <a href="planner.html">Planner</a>
+        <a href="budget.html">Budget</a>
+        <a href="notes.html" class="active">Notes</a>
+        <a href="helper.html">Study Helper</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <button id="logoutNotes" class="logout">Logout</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="main-header"><h1>Notes & Resources</h1></header>
+
+      <section class="container">
+        <div class="card">
+          <h2>Add Note</h2>
+          <input id="noteTitle" type="text" placeholder="Title" />
+          <textarea id="noteBody" placeholder="Write your note..."></textarea>
+          <div class="row">
+            <button id="addNoteBtn">Add Note</button>
+            <button id="clearNotes" class="muted-btn">Clear All</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Your Notes</h2>
+          <ul id="notesList"></ul>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="main.js"></script>
+  <script>
+    if (localStorage.getItem('ss_loggedIn') !== 'true') window.location.href = 'login.html';
+    const notesKey = 'ss_notes';
+    function loadNotes() {
+      const list = document.getElementById('notesList');
+      list.innerHTML = '';
+      const arr = JSON.parse(localStorage.getItem(notesKey) || '[]');
+      arr.forEach((n,i)=>{
+        const li = document.createElement('li');
+        li.innerHTML = `<strong>${n.title}</strong><div class="muted small">${new Date(n.created).toLocaleString()}</div><p>${n.body}</p><div><button data-index="${i}" class="delNote">Delete</button></div>`;
+        list.appendChild(li);
+      });
+      document.querySelectorAll('.delNote').forEach(b=>{
+        b.addEventListener('click', e=>{
+          const i = Number(e.target.dataset.index);
+          const arr = JSON.parse(localStorage.getItem(notesKey) || '[]');
+          arr.splice(i,1);
+          localStorage.setItem(notesKey, JSON.stringify(arr));
+          loadNotes();
+        });
+      });
+    }
+
+    document.getElementById('addNoteBtn').addEventListener('click', ()=>{
+      const title = document.getElementById('noteTitle').value.trim();
+      const body = document.getElementById('noteBody').value.trim();
+      if (!title || !body) return alert('Please enter title and note body.');
+      const arr = JSON.parse(localStorage.getItem(notesKey) || '[]');
+      arr.unshift({title, body, created: new Date().toISOString()}); // newest first
+      localStorage.setItem(notesKey, JSON.stringify(arr));
+      document.getElementById('noteTitle').value='';
+      document.getElementById('noteBody').value='';
+      loadNotes();
+    });
+
+    document.getElementById('clearNotes').addEventListener('click', ()=> {
+      if (confirm('Clear all notes?')) {
+        localStorage.setItem(notesKey, JSON.stringify([]));
+        loadNotes();
+      }
+    });
+
+    document.getElementById('logoutNotes').addEventListener('click', ()=> {
+      localStorage.removeItem('ss_loggedIn');
+      window.location.href = 'login.html';
+    });
+
+    loadNotes();
+  </script>
+</body>
+</html>

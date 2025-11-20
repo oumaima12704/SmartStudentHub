@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login - Smart Student Hub</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="login-body">
+  <main class="login-container card">
+    <h1>Smart Student Hub</h1>
+    <p class="muted">Enter your username to continue</p>
+
+    <label for="usernameInput">Username</label>
+    <input id="usernameInput" type="text" placeholder="Your name" />
+
+    <label for="passwordInput">Password (demo)</label>
+    <input id="passwordInput" type="password" placeholder="Password (optional)" />
+
+    <div class="row">
+      <button id="loginBtn">Continue</button>
+      <button id="demoBtn" class="muted-btn">Use Demo</button>
+    </div>
+
+    <p id="loginError" class="error"></p>
+    <p class="small muted">Your data is stored locally in your browser (localStorage).</p>
+  </main>
+
+  <script src="main.js"></script>
+  <script>
+    // login page handlers
+    document.getElementById('loginBtn').addEventListener('click', () => {
+      const name = document.getElementById('usernameInput').value.trim();
+      const pass = document.getElementById('passwordInput').value;
+      if (!name) {
+        document.getElementById('loginError').textContent = 'Please enter a username.';
+        return;
+      }
+      // basic demo: no server auth — store username and flag
+      localStorage.setItem('ss_username', name);
+      localStorage.setItem('ss_loggedIn', 'true');
+      // redirect to home
+      window.location.href = 'home.html';
+    });
+
+    document.getElementById('demoBtn').addEventListener('click', () => {
+      localStorage.setItem('ss_username', 'Student');
+      localStorage.setItem('ss_loggedIn', 'true');
+      // create empty data if not present
+      if (!localStorage.getItem('ss_tasks')) localStorage.setItem('ss_tasks', JSON.stringify([]));
+      if (!localStorage.getItem('ss_planner')) localStorage.setItem('ss_planner', JSON.stringify([]));
+      if (!localStorage.getItem('ss_notes')) localStorage.setItem('ss_notes', JSON.stringify([]));
+      if (!localStorage.getItem('ss_budget')) localStorage.setItem('ss_budget', JSON.stringify({income:0, expenses:[]}));
+      if (!localStorage.getItem('ss_modules')) localStorage.setItem('ss_modules', JSON.stringify({}));
+      window.location.href = 'home.html';
+    });
+  </script>
+</body>
+</html>

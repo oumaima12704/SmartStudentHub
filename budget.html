@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Budget - Smart Student Hub</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">Smart Student Hub</div>
+      <nav>
+        <a href="home.html">Home</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="tasks.html">Tasks</a>
+        <a href="planner.html">Planner</a>
+        <a href="budget.html" class="active">Budget</a>
+        <a href="notes.html">Notes</a>
+        <a href="helper.html">Study Helper</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <button id="logoutBudget" class="logout">Logout</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="main-header"><h1>Budget Tracker</h1></header>
+
+      <section class="container">
+        <div class="card">
+          <h2>Set Income</h2>
+          <input id="incomeInput" type="number" placeholder="Monthly income" />
+          <button id="saveIncome">Save Income</button>
+        </div>
+
+        <div class="card">
+          <h2>Add Expense</h2>
+          <input id="expenseName" type="text" placeholder="Expense name" />
+          <input id="expenseAmount" type="number" placeholder="Amount" />
+          <select id="expenseCategory">
+            <option value="Food">Food</option>
+            <option value="Transport">Transport</option>
+            <option value="Books">Books</option>
+            <option value="Printing">Printing</option>
+            <option value="Other">Other</option>
+          </select>
+          <div class="row">
+            <button id="addExpenseBtn">Add Expense</button>
+            <button id="clearExpenses" class="muted-btn">Clear</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Summary</h2>
+          <div id="budgetSummary"></div>
+          <ul id="expenseList"></ul>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="main.js"></script>
+  <script>
+    if (localStorage.getItem('ss_loggedIn') !== 'true') window.location.href = 'login.html';
+    const budgetKey = 'ss_budget';
+
+    function loadBudget() {
+      const data = JSON.parse(localStorage.getItem(budgetKey) || '{"income":0,"expenses":[]}');
+      document.getElementById('incomeInput').value = data.income || 0;
+      const totalExpenses = data.expenses.reduce((s,e)=>s+Number(e.amount),0);
+      const balance = Number(data.income || 0) - totalExpenses;
+      document.getElementById('budgetSummary').innerHTML = `<p><strong>Income:</strong> $${Number(data.income||0).toFixed(2)}</p>
+        <p><strong>Total Expenses:</strong> $${totalExpenses.toFixed(2)}</p>
+        <p><strong>Balance:</strong> $${balance.toFixed(2)}</p>`;
+      const list = document.getElementById('expenseList');
+      list.innerHTML = '';
+      data.expenses.forEach((ex,i)=>{
+        const li = document.createElement('li');
+        li.innerHTML = `${ex.name} — $${Number(ex.amount).toFixed(2)} • ${ex.category} <button data-index="${i}" class="delExp">Delete</button>`;
+        list.appendChild(li);
+      });
+      document.querySelectorAll('.delExp').forEach(b=> b.addEventListener('click', e=>{
+        const i = Number(e.target.dataset.index);
+        const d = JSON.parse(localStorage.getItem(budgetKey) || '{"income":0,"expenses":[]}');
+        d.expenses.splice(i,1);
+        localStorage.setItem(budgetKey, JSON.stringify(d));
+        loadBudget();
+      }));
+    }
+
+    document.getElementById('saveIncome').addEventListener('click', ()=>{
+      const income = Number(document.getElementById('incomeInput').value || 0);
+      const d = JSON.parse(localStorage.getItem(budgetKey) || '{"income":0,"expenses":[]}');
+      d.income = income;
+      localStorage.setItem(budgetKey, JSON.stringify(d));
+      loadBudget();
+    });
+
+    document.getElementById('addExpenseBtn').addEventListener('click', ()=>{
+      const name = document.getElementById('expenseName').value.trim();
+      const amount = Number(document.getElementById('expenseAmount').value);
+      const category = document.getElementById('expenseCategory').value;
+      if (!name || !amount) return alert('Please enter name and amount.');
+      const d = JSON.parse(localStorage.getItem(budgetKey) || '{"income":0,"expenses":[]}');
+      d.expenses.push({name, amount, category, date: (new Date()).toISOString()});
+      localStorage.setItem(budgetKey, JSON.stringify(d));
+      document.getElementById('expenseName').value='';
+      document.getElementById('expenseAmount').value='';
+      loadBudget();
+    });
+
+    document.getElementById('clearExpenses').addEventListener('click', ()=>{
+      if (confirm('Clear all expenses?')) {
+        localStorage.setItem(budgetKey, JSON.stringify({income:0, expenses:[]}));
+        loadBudget();
+      }
+    });
+
+    document.getElementById('logoutBudget').addEventListener('click', ()=> {
+      localStorage.removeItem('ss_loggedIn');
+      window.location.href = 'login.html';
+    });
+
+    loadBudget();
+  </script>
+</body>
+</html>

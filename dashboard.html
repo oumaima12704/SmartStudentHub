@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard - Smart Student Hub</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">Smart Student Hub</div>
+      <nav>
+        <a href="home.html">Home</a>
+        <a href="dashboard.html" class="active">Dashboard</a>
+        <a href="tasks.html">Tasks</a>
+        <a href="planner.html">Planner</a>
+        <a href="budget.html">Budget</a>
+        <a href="notes.html">Notes</a>
+        <a href="helper.html">Study Helper</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <button id="logoutBtnDash" class="logout">Logout</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="main-header">
+        <h1>Dashboard</h1>
+      </header>
+
+      <section class="container">
+        <div class="card">
+          <h2>Upcoming</h2>
+          <ul id="upcomingList"></ul>
+        </div>
+
+        <div class="card">
+          <h2>Quick Stats</h2>
+          <div class="grid-3">
+            <div class="small-card"><h4>Pending Tasks</h4><p id="dashTasks">0</p></div>
+            <div class="small-card"><h4>Reminders</h4><p id="dashRem">0</p></div>
+            <div class="small-card"><h4>Notes</h4><p id="dashNotes">0</p></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="main.js"></script>
+  <script>
+    if (localStorage.getItem('ss_loggedIn') !== 'true') window.location.href = 'login.html';
+    // load data
+    const tasks = JSON.parse(localStorage.getItem('ss_tasks') || '[]');
+    const planner = JSON.parse(localStorage.getItem('ss_planner') || '[]');
+    const notes = JSON.parse(localStorage.getItem('ss_notes') || '[]');
+
+    document.getElementById('dashTasks').textContent = tasks.filter(t=>!t.completed).length;
+    document.getElementById('dashRem').textContent = planner.filter(s=>s.reminder).length;
+    document.getElementById('dashNotes').textContent = notes.length;
+
+    // upcoming: tasks due soon and next exam
+    const upcoming = [];
+    tasks.forEach(t=>{
+      if (t.date) {
+        upcoming.push({type:'Task', text: t.title, date: t.date});
+      }
+    });
+    const modules = JSON.parse(localStorage.getItem('ss_modules') || '{}');
+    Object.entries(modules).forEach(([mname,m])=>{
+      if (m.exam) upcoming.push({type:'Exam', text: mname, date: m.exam});
+    });
+    // sort by date
+    upcoming.sort((a,b)=> new Date(a.date) - new Date(b.date));
+    const list = document.getElementById('upcomingList');
+    if (upcoming.length===0) list.innerHTML = '<li>No upcoming items.</li>';
+    else {
+      upcoming.slice(0,6).forEach(u=>{
+        const li = document.createElement('li');
+        li.textContent = `${u.type}: ${u.text} — ${new Date(u.date).toLocaleDateString()}`;
+        list.appendChild(li);
+      });
+    }
+
+    document.getElementById('logoutBtnDash').addEventListener('click', ()=> {
+      localStorage.removeItem('ss_loggedIn');
+      window.location.href = 'login.html';
+    });
+  </script>
+</body>
+</html>

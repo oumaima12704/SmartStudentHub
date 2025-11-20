@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Study Helper - Smart Student Hub</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">Smart Student Hub</div>
+      <nav>
+        <a href="home.html">Home</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="tasks.html">Tasks</a>
+        <a href="planner.html">Planner</a>
+        <a href="budget.html">Budget</a>
+        <a href="notes.html">Notes</a>
+        <a href="helper.html" class="active">Study Helper</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <button id="logoutHelper" class="logout">Logout</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="main-header"><h1>Study Helper (Modules)</h1></header>
+
+      <section class="container">
+        <div class="card">
+          <h2>Create / Select Module</h2>
+          <input id="moduleName" type="text" placeholder="Module name (e.g., Electronics 1)" />
+          <button id="createModule">Create Module</button>
+          <select id="moduleSelect"></select>
+        </div>
+
+        <div class="card" id="moduleCard" style="display:none;">
+          <h2 id="moduleTitle"></h2>
+          <label>Exam Date</label>
+          <input id="moduleExam" type="date" />
+          <button id="saveExam">Save Exam Date</button>
+
+          <h3>Lectures / Links</h3>
+          <input id="lectureInput" type="text" placeholder="Lecture title or link" />
+          <button id="addLecture">Add Lecture</button>
+          <ul id="lecturesList"></ul>
+
+          <h3>Exercises</h3>
+          <input id="exerciseInput" type="text" placeholder="Exercise description or link" />
+          <button id="addExercise">Add Exercise</button>
+          <ul id="exList"></ul>
+
+          <h3>Summary</h3>
+          <textarea id="summaryInput" placeholder="Short summary for this module"></textarea>
+          <button id="saveSummary">Save Summary</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="main.js"></script>
+  <script>
+    if (localStorage.getItem('ss_loggedIn') !== 'true') window.location.href = 'login.html';
+    const modulesKey = 'ss_modules';
+
+    function refreshModuleSelect() {
+      const sel = document.getElementById('moduleSelect');
+      sel.innerHTML = '';
+      const modules = JSON.parse(localStorage.getItem(modulesKey) || '{}');
+      const names = Object.keys(modules);
+      names.forEach(n=>{
+        const opt = document.createElement('option'); opt.value = n; opt.textContent = n;
+        sel.appendChild(opt);
+      });
+      if (names.length===0) {
+        const opt = document.createElement('option'); opt.textContent = 'No modules yet';
+        sel.appendChild(opt);
+        document.getElementById('moduleCard').style.display = 'none';
+      } else {
+        document.getElementById('moduleCard').style.display = 'block';
+        loadModule(names[0]);
+      }
+    }
+
+    document.getElementById('createModule').addEventListener('click', ()=>{
+      const name = document.getElementById('moduleName').value.trim();
+      if (!name) return alert('Enter module name.');
+      const modules = JSON.parse(localStorage.getItem(modulesKey) || '{}');
+      if (!modules[name]) modules[name] = {lectures:[], exercises:[], summary:'', exam:''};
+      localStorage.setItem(modulesKey, JSON.stringify(modules));
+      document.getElementById('moduleName').value='';
+      refreshModuleSelect();
+    });
+
+    document.getElementById('moduleSelect').addEventListener('change', (e)=> {
+      loadModule(e.target.value);
+    });
+
+    function loadModule(name) {
+      const modules = JSON.parse(localStorage.getItem(modulesKey) || '{}');
+      const m = modules[name];
+      if (!m) return;
+      document.getElementById('moduleTitle').textContent = name;
+      document.getElementById('moduleExam').value = m.exam || '';
+      const lectList = document.getElementById('lecturesList'); lectList.innerHTML='';
+      m.lectures.forEach((l,i)=>{
+        const li = document.createElement('li');
+        li.innerHTML = `${l} <button data-index="${i}" class="delLe">Delete</button>`;
+        lectList.appendChild(li);
+      });
+      const exList = document.getElementById('exList'); exList.innerHTML='';
+      m.exercises.forEach((ex,i)=>{
+        const li = document.createElement('li');
+        li.innerHTML = `${ex} <button data-index="${i}" class="delEx">Delete</button>`;
+        exList.appendChild(li);
+      });
+      document.getElementById('summaryInput').value = m.summary || '';
+      // attach delete handlers
+      document.querySelectorAll('.delLe').forEach(b => b.addEventListener('click', e=>{
+        const idx = Number(e.target.dataset.index); const modules = JSON.parse(localStorage.getItem(modulesKey) || '{}');
+        const nm = document.getElementById('moduleTitle').textContent;
+        modules[nm].lectures.splice(idx,1);
+        localStorage.setItem(modulesKey, JSON.stringify(modules));
+        loadModule(nm);
+      }));
+      document.querySelectorAll('.delEx').forEach(b => b.addEventListener('click', e=>{
+        const idx = Number(e.target.dataset.index); const modules = JSON.parse(localStorage.getItem(modulesKey) || '{}');
+        const nm = document.getElementById('moduleTitle').textContent;
+        modules[nm].exercises.splice(idx,1);
+        localStorage.setItem(modulesKey, JSON.stringify(modules));
+        loadModule(nm);
+      }));
+    }
+
+    document.getElementById('addLecture').addEventListener('click', ()=>{
+      const text = document.getElementById('lectureInput').value.trim();
+      const name = document.getElementById('moduleTitle').textContent;
+      if (!text) return;
+      const modules = JSON.parse(localStorage.getItem(modulesKey) || '{}');
+      modules[name].lectures.push(text);
+      localStorage.setItem(modulesKey, JSON.stringify(modules));
+      document.getElementById('lectureInput').value='';
+      loadModule(name);
+    });
+
+    document.getElementById('addExercise').addEventListener('click', ()=>{
+      const text = document.getElementById('exerciseInput').value.trim();
+      const name = document.getElementById('moduleTitle').textContent;
+      if (!text) return;
+      const modules = JSON.parse(localStorage.getItem(modulesKey) || '{}');
+      modules[name].exercises.push(text);
+      localStorage.setItem(modulesKey, JSON.stringify(modules));
+      document.getElementById('exerciseInput').value='';
+      loadModule(name);
+    });
+
+    document.getElementById('saveSummary').addEventListener('click', ()=>{
+      const text = document.getElementById('summaryInput').value.trim();
+      const name = document.getElementById('moduleTitle').textContent;
+      const modules = JSON.parse(localStorage.getItem(modulesKey) || '{}');
+      modules[name].summary = text;
+      localStorage.setItem(modulesKey, JSON.stringify(modules));
+      alert('Summary saved.');
+    });
+
+    document.getElementById('saveExam').addEventListener('click', ()=>{
+      const date = document.getElementById('moduleExam').value;
+      const name = document.getElementById('moduleTitle').textContent;
+      const modules = JSON.parse(localStorage.getItem(modulesKey) || '{}');
+      modules[name].exam = date;
+      localStorage.setItem(modulesKey, JSON.stringify(modules));
+      alert('Exam date saved.');
+    });
+
+    document.getElementById('logoutHelper').addEventListener('click', ()=> {
+      localStorage.removeItem('ss_loggedIn');
+      window.location.href = 'login.html';
+    });
+
+    refreshModuleSelect();
+  </script>
+</body>
+</html>

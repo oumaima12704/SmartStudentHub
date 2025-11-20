@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Planner - Smart Student Hub</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">Smart Student Hub</div>
+      <nav>
+        <a href="home.html">Home</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="tasks.html">Tasks</a>
+        <a href="planner.html" class="active">Planner</a>
+        <a href="budget.html">Budget</a>
+        <a href="notes.html">Notes</a>
+        <a href="helper.html">Study Helper</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <button id="logoutPlanner" class="logout">Logout</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="main-header"><h1>Study Planner & Reminders</h1></header>
+
+      <section class="container">
+        <div class="card">
+          <h2>Add Study Session</h2>
+          <input id="sessionModule" type="text" placeholder="Module / Subject" />
+          <input id="sessionDate" type="date" />
+          <input id="sessionStart" type="time" />
+          <input id="sessionEnd" type="time" />
+          <label><input id="sessionReminder" type="checkbox" /> Set reminder (in minutes before)</label>
+          <input id="reminderMinutes" type="number" min="1" placeholder="Minutes before (if reminder set)" />
+          <div class="row">
+            <button id="addSessionBtn">Add Session</button>
+            <button id="clearSessions" class="muted-btn">Clear All</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Your Sessions</h2>
+          <ul id="sessionsList"></ul>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="main.js"></script>
+  <script>
+    if (localStorage.getItem('ss_loggedIn') !== 'true') window.location.href = 'login.html';
+    const plannerKey = 'ss_planner';
+
+    function loadSessions() {
+      const list = document.getElementById('sessionsList');
+      list.innerHTML = '';
+      const arr = JSON.parse(localStorage.getItem(plannerKey) || '[]');
+      arr.forEach((s,i)=>{
+        const li = document.createElement('li');
+        li.innerHTML = `<strong>${s.module}</strong> — ${s.date} ${s.start} to ${s.end} 
+          <div class="muted small">${s.reminder ? 'Reminder set ('+s.reminderMinutes+' min)': 'No reminder'}</div>
+          <div><button data-index="${i}" class="delSess">Delete</button></div>`;
+        list.appendChild(li);
+      });
+      document.querySelectorAll('.delSess').forEach(b=>{
+        b.addEventListener('click', e=>{
+          const i = Number(e.target.dataset.index);
+          const arr = JSON.parse(localStorage.getItem(plannerKey) || '[]');
+          arr.splice(i,1);
+          localStorage.setItem(plannerKey, JSON.stringify(arr));
+          loadSessions();
+        });
+      });
+    }
+
+    document.getElementById('addSessionBtn').addEventListener('click', ()=>{
+      const module = document.getElementById('sessionModule').value.trim();
+      const date = document.getElementById('sessionDate').value;
+      const start = document.getElementById('sessionStart').value;
+      const end = document.getElementById('sessionEnd').value;
+      const reminder = document.getElementById('sessionReminder').checked;
+      const reminderMinutes = Number(document.getElementById('reminderMinutes').value) || 0;
+      if (!module || !date || !start || !end) return alert('Please fill module, date, start and end.');
+      const arr = JSON.parse(localStorage.getItem(plannerKey) || '[]');
+      arr.push({module, date, start, end, reminder, reminderMinutes});
+      localStorage.setItem(plannerKey, JSON.stringify(arr));
+      // schedule reminder (only while tab open) - we'll also check upcoming reminders on load
+      scheduleReminders();
+      document.getElementById('sessionModule').value='';
+      document.getElementById('sessionDate').value='';
+      document.getElementById('sessionStart').value='';
+      document.getElementById('sessionEnd').value='';
+      document.getElementById('sessionReminder').checked = false;
+      document.getElementById('reminderMinutes').value = '';
+      loadSessions();
+    });
+
+    document.getElementById('clearSessions').addEventListener('click', ()=>{
+      if (confirm('Clear all sessions?')) {
+        localStorage.setItem(plannerKey, JSON.stringify([]));
+        loadSessions();
+      }
+    });
+
+    document.getElementById('logoutPlanner').addEventListener('click', ()=> {
+      localStorage.removeItem('ss_loggedIn');
+      window.location.href = 'login.html';
+    });
+
+    // Reminder scheduler - checks for upcoming reminders every 30s
+    function scheduleReminders() {
+      const arr = JSON.parse(localStorage.getItem(plannerKey) || '[]');
+      arr.forEach(s=>{
+        if (!s.reminder) return;
+        // compute reminder time
+        const startDateTime = new Date(`${s.date}T${s.start}`);
+        const remindAt = new Date(startDateTime.getTime() - (Number(s.reminderMinutes)||0)*60*1000);
+        const now = new Date();
+        // If reminder time is in the future, set timeout
+        if (remindAt > now && remindAt - now < 24*60*60*1000) {
+          // set a timeout (only works while tab is open)
+          setTimeout(()=>{
+            alert(`Reminder: Study session for ${s.module} starts at ${s.start}`);
+          }, remindAt - now);
+        }
+      });
+    }
+
+    // also show immediate upcoming reminders on page load (next 24h)
+    function showUpcomingReminders() {
+      const arr = JSON.parse(localStorage.getItem(plannerKey) || '[]');
+      const soon = arr.filter(s=>{
+        if (!s.reminder) return false;
+        const startDateTime = new Date(`${s.date}T${s.start}`);
+        const remindAt = new Date(startDateTime.getTime() - (Number(s.reminderMinutes)||0)*60*1000);
+        const diff = remindAt - new Date();
+        return diff > 0 && diff < 24*60*60*1000;
+      });
+      if (soon.length) {
+        const list = soon.map(s=>`${s.module} on ${s.date} at ${s.start} (reminder ${s.reminderMinutes} min before)`);
+        const message = 'Upcoming reminders:\n' + list.join('\n');
+        // show a non-intrusive message
+        console.log(message);
+      }
+    }
+
+    loadSessions();
+    scheduleReminders();
+    showUpcomingReminders();
+  </script>
+</body>
+</html>

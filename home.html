@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Home - Smart Student Hub</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- sidebar + main container -->
+  <div class="app">
+    <!-- sidebar injected for all pages by HTML here -->
+    <aside class="sidebar">
+      <div class="brand">Smart Student Hub</div>
+      <nav>
+        <a href="home.html" class="active">Home</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="tasks.html">Tasks</a>
+        <a href="planner.html">Planner</a>
+        <a href="budget.html">Budget</a>
+        <a href="notes.html">Notes</a>
+        <a href="helper.html">Study Helper</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <button id="logoutBtn" class="logout">Logout</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="main-header">
+        <h1 id="welcomeTitle">Welcome</h1>
+      </header>
+
+      <section class="container">
+        <div class="card">
+          <h2>Hello!</h2>
+          <p id="welcomeMsg">This is your Smart Student Hub. Click the links on the left to manage tasks, planner, budget, notes and study materials.</p>
+          <div class="row">
+            <a href="dashboard.html"><button>Go to Dashboard</button></a>
+            <a href="tasks.html"><button class="muted-btn">Go to Tasks</button></a>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Quick Overview</h3>
+          <div id="overviewGrid" class="grid-3">
+            <div class="small-card">
+              <h4 id="ovTasks">Tasks</h4>
+              <p id="ovTasksNum">0 pending</p>
+            </div>
+            <div class="small-card">
+              <h4 id="ovNextExam">Next Exam</h4>
+              <p id="ovNextExamVal">—</p>
+            </div>
+            <div class="small-card">
+              <h4 id="ovBalance">Balance</h4>
+              <p id="ovBalanceVal">$0</p>
+            </div>
+          </div>
+        </div>
+
+      </section>
+    </main>
+  </div>
+
+  <script src="main.js"></script>
+  <script>
+    // redirect if not logged in
+    if (localStorage.getItem('ss_loggedIn') !== 'true') {
+      window.location.href = 'login.html';
+    }
+
+    const username = localStorage.getItem('ss_username') || 'Student';
+    document.getElementById('welcomeTitle').textContent = `Welcome, ${username}`;
+    document.getElementById('welcomeMsg').textContent = `Welcome back, ${username}. Use the left menu to navigate your hub.`;
+
+    // overview values
+    const tasks = JSON.parse(localStorage.getItem('ss_tasks') || '[]');
+    document.getElementById('ovTasksNum').textContent = `${tasks.filter(t=>!t.completed).length} pending`;
+    // next exam from modules
+    const modules = JSON.parse(localStorage.getItem('ss_modules') || '{}');
+    let nextExam = null;
+    Object.values(modules).forEach(m=>{
+      if (m.exam) {
+        const d = new Date(m.exam);
+        if (!isNaN(d)) {
+          if (!nextExam || d < nextExam) nextExam = d;
+        }
+      }
+    });
+    document.getElementById('ovNextExamVal').textContent = nextExam ? nextExam.toLocaleDateString() : '—';
+    // balance
+    const budget = JSON.parse(localStorage.getItem('ss_budget') || '{"income":0,"expenses":[]}');
+    const totalExpenses = budget.expenses.reduce((s,e)=>s+Number(e.amount),0);
+    const balance = Number(budget.income) - totalExpenses;
+    document.getElementById('ovBalanceVal').textContent = `$${balance.toFixed(2)}`;
+
+    // logout
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      localStorage.removeItem('ss_loggedIn');
+      // optional: keep username but log out flag
+      window.location.href = 'login.html';
+    });
+  </script>
+</body>
+</html>
